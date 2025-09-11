@@ -1,6 +1,5 @@
 
 from email.mime import base
-from tkinter import Y
 
 from black import left_hand_split
 from opencood.utils.transformation_utils import x_to_world, x1_to_x2

@@ -25,7 +25,7 @@ class V2XSIMBaseDataset(Dataset):
     def __init__(self,
                  params: Dict,
                  visualize: bool = False,
-                 train: bool = True):
+                 train: bool = True, select_scenario=None):
         self.params = params
         self.visualize = visualize
         self.train = train
@@ -99,7 +99,7 @@ class V2XSIMBaseDataset(Dataset):
 
             for j, cav_id in enumerate(cav_ids):
                 if j > self.max_cav - 1:
-                    print('too many cavs reinitialize')
+                    # print('too many cavs reinitialize')
                     break
 
                 self.scene_database[i][cav_id] = OrderedDict()

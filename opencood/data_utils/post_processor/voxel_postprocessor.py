@@ -137,6 +137,7 @@ class VoxelPostprocessor(BasePostprocessor):
             box_utils.corner2d_to_standup_box(gt_box_corner_valid)
 
         # (H*W*anchor_n)
+        # (anchor_idx, gt_idx)
         iou = bbox_overlaps(
             np.ascontiguousarray(anchors_standup_2d).astype(np.float32),
             np.ascontiguousarray(gt_standup_2d).astype(np.float32),
@@ -169,7 +170,12 @@ class VoxelPostprocessor(BasePostprocessor):
         # cal the target and set the equal one
         index_x, index_y, index_z = np.unravel_index(
             id_pos, (*feature_map_shape, self.anchor_num))
-        pos_equal_one[index_x, index_y, index_z] = 1
+        
+        if 'pseudo_score' in kwargs:
+            score = kwargs['pseudo_score']
+            pos_equal_one[index_x, index_y, index_z] = score[id_pos_gt]
+        else:
+            pos_equal_one[index_x, index_y, index_z] = 1
 
         # calculate the targets
         targets[index_x, index_y, np.array(index_z) * 7] = \

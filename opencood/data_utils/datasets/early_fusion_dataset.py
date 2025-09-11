@@ -25,8 +25,8 @@ def getEarlyFusionDataset(cls):
         This dataset is used for early fusion, where each CAV transmit the raw
         point cloud to the ego vehicle.
         """
-        def __init__(self, params, visualize, train=True):
-            super(EarlyFusionDataset, self).__init__(params, visualize, train)
+        def __init__(self, params, visualize, train=True, select_scenario=None):
+            super(EarlyFusionDataset, self).__init__(params, visualize, train, select_scenario)
             self.supervise_single = True if ('supervise_single' in params['model']['args'] and params['model']['args']['supervise_single']) \
                                         else False
             assert self.supervise_single is False

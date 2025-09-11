@@ -10,7 +10,7 @@ from opencood.tools.inference_utils import get_cav_box
 import opencood.visualization.simple_plot3d.canvas_3d as canvas_3d
 import opencood.visualization.simple_plot3d.canvas_bev as canvas_bev
 
-def visualize(infer_result, pcd, pc_range, save_path, method='3d', left_hand=False):
+def visualize(infer_result, pcd, pc_range, save_path, method='3d', left_hand=False, nobox=False):
         """
         Visualize the prediction, ground truth with point cloud together.
         They may be flipped in y axis. Since carla is left hand coordinate, while kitti is right hand.
@@ -102,17 +102,17 @@ def visualize(infer_result, pcd, pc_range, save_path, method='3d', left_hand=Fal
 
             canvas_xy, valid_mask = canvas.get_canvas_coords(pcd_np) # Get Canvas Coords
             canvas.draw_canvas_points(canvas_xy[valid_mask]) # Only draw valid points
-            if gt_box_tensor is not None:
+            if not nobox and gt_box_tensor is not None:
                 canvas.draw_boxes(gt_box_np,colors=(0,255,0), texts=gt_name)
                 # canvas.draw_boxes(gt_box_np,colors=(0,255,0), texts=['']*len(gt_name), box_line_thickness=4) # paper visualization
-            if pred_box_tensor is not None:
+            if not nobox and pred_box_tensor is not None:
                 canvas.draw_boxes(pred_box_np, colors=(255,0,0), texts=pred_name)
                 # canvas.draw_boxes(pred_box_np, colors=(255,0,0), texts=['']*len(pred_name), box_line_thickness=4) # paper visualization
 
             # heterogeneous
             agent_modality_list = infer_result.get("agent_modality_list", None)
             cav_box_np = infer_result.get("cav_box_np", None)
-            if agent_modality_list is not None:
+            if not nobox and agent_modality_list is not None:
                 cav_box_np = copy.deepcopy(cav_box_np)
                 for i, modality_name in enumerate(agent_modality_list):
                     if modality_name == "m1":

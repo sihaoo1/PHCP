@@ -11,6 +11,7 @@ from datetime import datetime
 import shutil
 import torch
 import torch.optim as optim
+from typing import List
 
 def backup_script(full_path, folders_to_save=["models", "data_utils", "utils", "loss"]):
     target_folder = os.path.join(full_path, 'scripts')
@@ -71,6 +72,7 @@ def load_saved_model(saved_path, model):
 
     def findLastCheckpoint(save_dir):
         file_list = glob.glob(os.path.join(save_dir, '*epoch*.pth'))
+        file_list = [x for x in file_list if 'bestval' not in x]
         if file_list:
             epochs_exist = []
             for file_ in file_list:
@@ -81,19 +83,25 @@ def load_saved_model(saved_path, model):
             initial_epoch_ = 0
         return initial_epoch_
 
-    file_list = glob.glob(os.path.join(saved_path, 'net_epoch_bestval_at*.pth'))
-    if file_list:
-        assert len(file_list) == 1
-        print("resuming best validation model at epoch %d" % \
-                eval(file_list[0].split("/")[-1].rstrip(".pth").lstrip("net_epoch_bestval_at")))
-        loaded_state_dict = torch.load(file_list[0] , map_location='cpu')
-        check_missing_key(model.state_dict(), loaded_state_dict)
-        model.load_state_dict(loaded_state_dict, strict=False)
-        return eval(file_list[0].split("/")[-1].rstrip(".pth").lstrip("net_epoch_bestval_at")), model
-
+    if os.environ.get('USE_SAVE') is  None:
+        print("load from best model..")
+        file_list = glob.glob(os.path.join(saved_path, 'net_epoch_bestval_at*.pth'))
+        if file_list:
+            assert len(file_list) == 1
+            print("resuming best validation model at epoch %d" % \
+                    eval(file_list[0].split("/")[-1].rstrip(".pth").lstrip("net_epoch_bestval_at")))
+            print("load bestval model from", file_list[0])
+            loaded_state_dict = torch.load(file_list[0] , map_location='cpu')
+            check_missing_key(model.state_dict(), loaded_state_dict)
+            model.load_state_dict(loaded_state_dict, strict=False)
+            return eval(file_list[0].split("/")[-1].rstrip(".pth").lstrip("net_epoch_bestval_at")), model
+ 
+    print("load from last model...")
     initial_epoch = findLastCheckpoint(saved_path)
     if initial_epoch > 0:
         print('resuming by loading epoch %d' % initial_epoch)
+        print("load model from", os.path.join(saved_path,
+                         'net_epoch%d.pth' % initial_epoch))
         loaded_state_dict = torch.load(os.path.join(saved_path,
                          'net_epoch%d.pth' % initial_epoch), map_location='cpu')
         check_missing_key(model.state_dict(), loaded_state_dict)
@@ -284,3 +292,79 @@ def to_device(inputs, device):
                 or isinstance(inputs, str) or not hasattr(inputs, 'to'):
             return inputs
         return inputs.to(device, non_blocking=True)
+
+
+
+
+"""
+milesontes: 这里降低学习率
+gamma: 衰减因子
+warmup_factor: 初始学习率
+warmup_iters: warmup迭代次数
+warmup_method: warmup方法
+last_epoch: 最后一个epoch
+"""
+class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer,
+        milestones: List[int] = [2000],
+        gamma: float = 0.1,
+        warmup_factor: float = 0.001,
+        warmup_iters: int = 1000,
+        warmup_method: str = "linear",
+        last_epoch: int = -1,
+    ):
+        if not list(milestones) == sorted(milestones):
+            raise ValueError(
+                "Milestones should be a list of" " increasing integers. Got {}", milestones
+            )
+        self.milestones = milestones
+        self.gamma = gamma
+        self.warmup_factor = warmup_factor
+        self.warmup_iters = warmup_iters
+        self.warmup_method = warmup_method
+        print(f"scheduler: step_size {self.milestones} warmup_iters: {self.warmup_iters} warmup_factor: {self.warmup_factor}")
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self) -> List[float]:
+        warmup_factor = _get_warmup_factor_at_iter(
+            self.warmup_method, self.last_epoch, self.warmup_iters, self.warmup_factor
+        )
+        return [
+            base_lr * warmup_factor * self.gamma ** bisect_right(self.milestones, self.last_epoch)
+            for base_lr in self.base_lrs
+        ]
+
+    def _compute_values(self) -> List[float]:
+        # The new interface
+        return self.get_lr()
+    
+    
+def _get_warmup_factor_at_iter(
+    method: str, iter: int, warmup_iters: int, warmup_factor: float
+) -> float:
+    """
+    Return the learning rate warmup factor at a specific iteration.
+    See :paper:`ImageNet in 1h` for more details.
+
+    Args:
+        method (str): warmup method; either "constant" or "linear".
+        iter (int): iteration at which to calculate the warmup factor.
+        warmup_iters (int): the number of warmup iterations.
+        warmup_factor (float): the base warmup factor (the meaning changes according
+            to the method used).
+
+    Returns:
+        float: the effective warmup factor at the given iteration.
+    """
+    if iter >= warmup_iters:
+        return 1.0
+
+    if method == "constant":
+        return warmup_factor
+    elif method == "linear":
+        alpha = iter / warmup_iters
+        return warmup_factor * (1 - alpha) + alpha
+    else:
+        raise ValueError("Unknown warmup method: {}".format(method))

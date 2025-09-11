@@ -1,5 +1,5 @@
 
-from tkinter import Y
+from logging import root
 from turtle import left
 from opencood.utils.transformation_utils import x_to_world
 from torch.utils.data import Subset
@@ -23,7 +23,7 @@ classes = ['agent1', 'agent2', 'agent3', 'agent4']
 
 def main():
     ## basic setting
-    dataset = SimpleDataset()
+    dataset = SimpleDataset(root_dir="/home/sihao/repo/HEAL/dataset/OPV2V/test")
     data_dict_demo = dataset[0]
     cav_ids = list(data_dict_demo.keys())
     cav_invert_dict = dict() # cav_id -> o/1/2

@@ -1,3 +1,5 @@
+import os
+from cv2 import data
 from opencood.data_utils.datasets.late_fusion_dataset import getLateFusionDataset
 from opencood.data_utils.datasets.late_heter_fusion_dataset import getLateheterFusionDataset
 from opencood.data_utils.datasets.early_fusion_dataset import getEarlyFusionDataset
@@ -11,6 +13,7 @@ from opencood.data_utils.datasets.basedataset.opv2v_basedataset import OPV2VBase
 from opencood.data_utils.datasets.basedataset.v2xsim_basedataset import V2XSIMBaseDataset
 from opencood.data_utils.datasets.basedataset.dairv2x_basedataset import DAIRV2XBaseDataset
 from opencood.data_utils.datasets.basedataset.v2xset_basedataset import V2XSETBaseDataset
+from opencood.data_utils.datasets.basedataset.opv2v_scenario import OPV2VScenarioBaseDataset
 
 def build_dataset(dataset_cfg, visualize=False, train=True):
     fusion_name = dataset_cfg['fusion']['core_method']
@@ -31,3 +34,40 @@ def build_dataset(dataset_cfg, visualize=False, train=True):
     )
 
     return dataset
+
+
+def build_scenario_dataset(dataset_cfg, visualize=False, train=True, select_scenario=""):
+    fusion_name = dataset_cfg['fusion']['core_method']
+    dataset_name = dataset_cfg['fusion']['dataset']
+
+    # assert fusion_name in ['intermediateheter']
+    assert dataset_name in ['opv2v']
+
+    fusion_dataset_func = "get" + fusion_name.capitalize() + "FusionDataset"
+    fusion_dataset_func = eval(fusion_dataset_func)
+    base_dataset_cls = dataset_name.upper() + "BaseDataset"
+    base_dataset_cls = eval(base_dataset_cls)
+    
+    if select_scenario != "":
+        print(f"Select scenario: {select_scenario}")
+        dataset = fusion_dataset_func(base_dataset_cls)(
+            params=dataset_cfg,
+            visualize=visualize,
+            train=train,
+            select_scenario=select_scenario
+        )
+        return [dataset]
+    
+    scenarios = OPV2VScenarioBaseDataset(dataset_cfg, visualize, train).get_scenarios()
+    datasets = []
+    for scenario in scenarios:
+        dataset = fusion_dataset_func(base_dataset_cls)(
+            params=dataset_cfg,
+            visualize=visualize,
+            train=train,
+            select_scenario=scenario
+        )
+        datasets.append(dataset)
+        if os.environ.get('DEBUG'):
+            break
+    return datasets

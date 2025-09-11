@@ -39,8 +39,8 @@ def getLateheterFusionDataset(cls):
     cls: the Basedataset.
     """
     class LateheterFusionDataset(cls):
-        def __init__(self, params, visualize, train=True):
-            super().__init__(params, visualize, train)
+        def __init__(self, params, visualize, train=True, select_scenario=None):
+            super().__init__(params, visualize, train, select_scenario)
             self.anchor_box = self.post_processor.generate_anchor_box()
             self.anchor_box_torch = torch.from_numpy(self.anchor_box)
 
@@ -98,7 +98,7 @@ def getLateheterFusionDataset(cls):
                         options.append(cav_id)
                 selected_cav_base = base_data_dict[random.choice(options)]
             else:
-                selected_cav_id, selected_cav_base = list(base_data_dict.items())[0]
+                selected_cav_id, selected_cav_base = sorted(list(base_data_dict.items()))[0]
             
             selected_cav_processed = self.get_item_single_car(selected_cav_base)
             processed_data_dict.update({"ego": selected_cav_processed})

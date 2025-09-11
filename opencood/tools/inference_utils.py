@@ -15,6 +15,20 @@ from opencood.utils.box_utils import create_bbx, project_box3d, nms_rotated
 from opencood.utils.camera_utils import indices_to_depth
 from sklearn.metrics import mean_squared_error
 
+
+def inference_by_fusion_type(batch_data, model, dataset, fusion_type):
+    func_dict = {
+        'late': inference_late_fusion,
+        'early': inference_early_fusion,
+        'intermediate': inference_intermediate_fusion,
+        'no': inference_no_fusion,
+        'no_w_uncertainty': inference_no_fusion_w_uncertainty,
+        'single': inference_single
+    }
+    assert fusion_type in func_dict.keys()
+    return func_dict[fusion_type](batch_data, model, dataset)
+    
+
 def inference_late_fusion(batch_data, model, dataset):
     """
     Model inference for late fusion.
@@ -151,6 +165,10 @@ def inference_early_fusion(batch_data, model, dataset):
     if "depth_items" in output_dict['ego']:
         return_dict.update({"depth_items" : output_dict['ego']['depth_items']})
     return return_dict
+
+
+def inference_single(batch_data, model, dataset):
+    return inference_no_fusion(batch_data, model, dataset, single_gt=True)
 
 
 def inference_intermediate_fusion(batch_data, model, dataset):

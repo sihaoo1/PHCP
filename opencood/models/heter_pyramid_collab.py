@@ -26,11 +26,17 @@ class HeterPyramidCollab(nn.Module):
         modality_name_list = [x for x in modality_name_list if x.startswith("m") and x[1:].isdigit()] 
         self.modality_name_list = modality_name_list
 
+        self.fsl_training = False
         self.cav_range = args['lidar_range']
         self.sensor_type_dict = OrderedDict()
 
         self.cam_crop_info = {} 
 
+        if "fsl_fix" in args:
+            self.fsl_training = True
+            self.fix_agent_module = args["fsl_fix"]
+            self.fix_modules = ['pyramid_backbone', 'cls_head', 'reg_head', 'dir_head']
+            
         # setup each modality model
         for modality_name in self.modality_name_list:
             model_setting = args[modality_name]
@@ -47,6 +53,10 @@ class HeterPyramidCollab(nn.Module):
                 if name.lower() == target_model_name.lower():
                     encoder_class = cls
 
+            
+            if self.fsl_training and modality_name in self.fix_agent_module:
+                self.fix_modules += [f"encoder_{modality_name}", f"backbone_{modality_name}"]
+            
             """
             Encoder building
             """
@@ -95,6 +105,8 @@ class HeterPyramidCollab(nn.Module):
         if 'shrink_header' in args:
             self.shrink_flag = True
             self.shrink_conv = DownsampleConv(args['shrink_header'])
+            if self.fsl_training:
+                self.fix_modules.append('shrink_conv')
 
         """
         Shared Heads
@@ -126,9 +138,16 @@ class HeterPyramidCollab(nn.Module):
             for p in self.parameters():
                 p.requires_grad_(False)
             # unfreeze compressor
-            self.compressor.train()
-            for p in self.compressor.parameters():
-                p.requires_grad_(True)
+            if not self.fsl_training:
+                self.compressor.train()
+                for p in self.compressor.parameters():
+                    p.requires_grad_(True)
+        if self.fsl_training:
+            for module in self.fix_modules:
+                for p in eval(f"self.{module}").parameters():
+                    p.requires_grad_(False)
+                eval(f"self.{module}").apply(fix_bn)
+            
 
     def forward(self, data_dict):
         output_dict = {'pyramid': 'collab'}
@@ -178,6 +197,7 @@ class HeterPyramidCollab(nn.Module):
 
         heter_feature_2d = torch.stack(heter_feature_2d_list)
         
+        #need_plot = self.pyramid_backbone.plot_aligned_feature_cnt(heter_feature_2d, record_len, affine_matrix)
         if self.compress:
             heter_feature_2d = self.compressor(heter_feature_2d)
 
@@ -192,6 +212,7 @@ class HeterPyramidCollab(nn.Module):
                                                 self.cam_crop_info
                                             )
 
+        #self.pyramid_backbone.plot_aligned_feature_cnt(heter_feature_2d, record_len, affine_matrix, need_plot, suffix="fused")
         if self.shrink_flag:
             fused_feature = self.shrink_conv(fused_feature)
 

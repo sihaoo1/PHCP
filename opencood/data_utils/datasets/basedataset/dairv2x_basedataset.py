@@ -25,7 +25,7 @@ from opencood.data_utils.pre_processor import build_preprocessor
 from opencood.data_utils.post_processor import build_postprocessor
 
 class DAIRV2XBaseDataset(Dataset):
-    def __init__(self, params, visualize, train=True):
+    def __init__(self, params, visualize, train=True, select_scenario=None):
         self.params = params
         self.visualize = visualize
         self.train = train

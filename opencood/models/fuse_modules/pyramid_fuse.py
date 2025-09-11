@@ -2,6 +2,7 @@
 # Author: Yifan Lu <yifan_lu@sjtu.edu.cn>
 # License: TDG-Attribution-NonCommercial-NoDistrib
 
+import os
 import numpy as np
 import torch
 import torch.nn as nn
@@ -68,6 +69,7 @@ class PyramidFusion(ResNetBEVBackbone):
         Do not downsample in the first layer.
         """
         super().__init__(model_cfg, input_channels)
+        self.plot_id = 0 
         if model_cfg["resnext"]:
             Bottleneck.expansion = 1
             self.resnet = ResNetModified(Bottleneck, 
@@ -166,3 +168,46 @@ class PyramidFusion(ResNetBEVBackbone):
 
         
         return fused_feature, occ_map_list 
+
+
+
+    def plot_aligned_feature(self, x, record_len, affine_matrix):
+        _, C, H, W = x.shape
+        B, L = affine_matrix.shape[:2]
+        split_x = regroup(x, record_len)
+        batch_node_features = split_x
+        # iterate each batch
+        for b in range(B):
+            N = record_len[b]
+            t_matrix = affine_matrix[b][:N, :N, :, :]
+            i = 0 # ego
+            feature_in_ego = warp_affine_simple(batch_node_features[b],
+                                            t_matrix[i, :, :, :],
+                                            (H, W), align_corners=self.align_corners)
+            plot_feature(feature_in_ego, channel=list(range(64)), save_path='/home/sihao/tmp')
+                
+        return 
+    
+    def plot_aligned_feature_cnt(self, x, record_len, affine_matrix, need_plot=False, suffix=""):
+
+        _, C, H, W = x.shape
+        B, L = affine_matrix.shape[:2]
+        split_x = regroup(x, record_len)
+        batch_node_features = split_x
+
+        save_dir = f"/home/sihao/tmp/v1/plot_{suffix}{self.plot_id}"  # 使用递增 ID
+        os.makedirs(save_dir, exist_ok=True)
+        self.plot_id += 1  # 每次执行绘图后 ID 递增
+
+        # iterate each batch
+        for b in range(B):
+            N = record_len[b]
+            t_matrix = affine_matrix[b][:N, :N, :, :]
+            i = 0  # ego
+            feature_in_ego = warp_affine_simple(batch_node_features[b],
+                                                t_matrix[i, :, :, :],
+                                                (H, W), align_corners=self.align_corners)
+            save_path = os.path.join(save_dir, f"feature_b{b}.png")  # 为每个 batch 生成单独文件
+            plot_feature(feature_in_ego, channel=list(range(64)), save_path=save_path)
+        
+        return True

@@ -37,8 +37,8 @@ def getIntermediateFusionDataset(cls):
     cls: the Basedataset.
     """
     class IntermediateFusionDataset(cls):
-        def __init__(self, params, visualize, train=True):
-            super().__init__(params, visualize, train)
+        def __init__(self, params, visualize, train=True, select_scenario=None):
+            super().__init__(params, visualize, train, select_scenario)
             # intermediate and supervise single
             self.supervise_single = True if ('supervise_single' in params['model']['args'] and params['model']['args']['supervise_single']) \
                                         else False

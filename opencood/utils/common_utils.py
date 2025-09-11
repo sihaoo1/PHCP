@@ -7,12 +7,49 @@
 Common utilities
 """
 
+import importlib
 import numpy as np
 import torch
 from shapely.geometry import Polygon
 import json
 import pickle
 from collections import OrderedDict
+
+def update_hypes(hypes, opt):
+    if 'heter' in hypes:
+        # hypes['heter']['lidar_channels'] = 16
+        # opt.note += "_16ch"
+
+        x_min, x_max = -eval(opt.range.split(',')[0]), eval(opt.range.split(',')[0])
+        y_min, y_max = -eval(opt.range.split(',')[1]), eval(opt.range.split(',')[1])
+        opt.note += f"_{x_max}_{y_max}"
+
+        new_cav_range = [x_min, y_min, hypes['postprocess']['anchor_args']['cav_lidar_range'][2], \
+                            x_max, y_max, hypes['postprocess']['anchor_args']['cav_lidar_range'][5]]
+
+        # replace all appearance
+        hypes = update_dict(hypes, {
+            "cav_lidar_range": new_cav_range,
+            "lidar_range": new_cav_range,
+            "gt_range": new_cav_range
+        })
+
+        # reload anchor
+        yaml_utils_lib = importlib.import_module("opencood.hypes_yaml.yaml_utils")
+        for name, func in yaml_utils_lib.__dict__.items():
+            if name == hypes["yaml_parser"]:
+                parser_func = func
+        hypes = parser_func(hypes)
+
+        
+    
+    hypes['validate_dir'] = hypes['test_dir']
+    if "OPV2V" in hypes['test_dir'] or "v2xsim" in hypes['test_dir']:
+        pass
+        #assert "test" in hypes['validate_dir']
+    if 'box_align' in hypes.keys():
+        hypes['box_align']['val_result'] = hypes['box_align']['test_result']
+    return hypes    
 
 def update_dict(d1,d2):
     '''

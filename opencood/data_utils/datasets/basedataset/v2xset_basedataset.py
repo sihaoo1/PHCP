@@ -6,7 +6,7 @@ from opencood.data_utils.datasets.basedataset.opv2v_basedataset import OPV2VBase
 
 # All the same as OPV2V
 class V2XSETBaseDataset(OPV2VBaseDataset):
-    def __init__(self, params, visulize, train=True):
+    def __init__(self, params, visulize, train=True, select_scenario=None):
         super().__init__(params, visulize, train)
 
         if self.load_camera_file is True: # '2021_09_09_13_20_58'. This scenario has only 3 camera files?

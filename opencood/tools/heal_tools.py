@@ -2,6 +2,9 @@
 # Author: Yifan Lu <yifan_lu@sjtu.edu.cn>
 # License: TDG-Attribution-NonCommercial-NoDistrib
 
+from pyexpat import model
+import random
+import numpy as np
 import torch
 import os
 import sys
@@ -101,6 +104,20 @@ def merge_dict(single_model_dict, stage1_model_dict):
         merged_dict[key] = stage1_model_dict[key]
 
     return merged_dict
+
+def merge_agents_dict(model1_dict, model2_dict):
+    merged_dict = model1_dict.copy()
+    model2_keys = set(model2_dict.keys())
+    record = set()
+    for key in model2_keys:
+        if key.startswith("encoder_m") or key.startswith("backbone_m"):
+            record.add(key.split('.')[0])
+            merged_dict[key] = model2_dict[key]
+    print("add agents: ", record)
+    return merged_dict
+    
+    
+    
     
 def merge_and_save(single_model_dir, stage1_model_dir, output_model_dir):
     single_model_path = get_model_path_from_dir(single_model_dir)
@@ -129,6 +146,54 @@ def merge_and_save_final(aligned_model_dir_list, output_model_dir):
     output_model_path = os.path.join(output_model_dir, 'net_epoch1.pth')
     torch.save(final_dict, output_model_path)
 
+def merge_encoder_and_save_final(agent_model_list, output_model_dir):
+    assert len(agent_model_list) == 2
+    agent1_dict = torch.load(get_model_path_from_dir(agent_model_list[0]), map_location='cpu')
+    agent2_dict = torch.load(get_model_path_from_dir(agent_model_list[1]), map_location='cpu')
+    final_dict = merge_agents_dict(agent1_dict, agent2_dict)
+    output_model_path = os.path.join(output_model_dir, 'net_epoch1.pth')
+    torch.save(final_dict, output_model_path)
+
+
+def align_encoder_and_save_final(agent_model_list, output_model_dir):
+    assert len(agent_model_list) == 2
+    model1_dict = torch.load(get_model_path_from_dir(agent_model_list[0]), map_location='cpu')
+    merged_dict = model1_dict.copy()
+    record = set()
+    for key in model1_dict:
+        if key.startswith("encoder_m") or key.startswith("backbone_m"):
+            new_key = key.replace("_m1", "_m3")
+            print("add new key: ", new_key, key)
+            merged_dict[new_key] = model1_dict[key]
+            
+    output_model_path = os.path.join(output_model_dir, 'net_epoch1.pth')
+    torch.save(merged_dict, output_model_path)
+    
+
+def merge_aligner(agent_model_list, output_model_dir):
+    assert len(agent_model_list) == 2
+    agent1_dict = torch.load(get_model_path_from_dir(agent_model_list[0]), map_location='cpu')
+    agent2_dict = torch.load(get_model_path_from_dir(agent_model_list[1]), map_location='cpu')
+    for key in agent2_dict:
+        if key.startswith("aligner_m3"):
+            print("merge aligner: ", key)
+            agent1_dict[key] = agent2_dict[key]
+    
+    output_model_path = os.path.join(output_model_dir, 'net_epoch1.pth')
+    torch.save(agent1_dict, output_model_path)
+
+
+def set_seed():
+    np_seed = 303
+    torch_seed = 0
+    random.seed(np_seed)
+    np.random.seed(np_seed)
+    torch.manual_seed(torch_seed)
+    torch.cuda.manual_seed(torch_seed)
+    torch.cuda.manual_seed_all(torch_seed)  # 如果使用多GPU
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 if __name__ == "__main__":
     func = sys.argv[1]
@@ -145,5 +210,11 @@ if __name__ == "__main__":
         merge_and_save(single_model_dir, stage1_model_dir, output_model_dir)
     elif func == 'merge_final': 
         merge_and_save_final(sys.argv[2:-1], sys.argv[-1])
+    elif func == 'merge_encoder_and_save_final':
+        merge_encoder_and_save_final(sys.argv[2:-1], sys.argv[-1])
+    elif func == 'align_encoder_and_save_final':
+        align_encoder_and_save_final(sys.argv[2:-1], sys.argv[-1])
+    elif func == 'merge_aligner':
+        merge_aligner(sys.argv[2:-1], sys.argv[-1])
     else:
         raise "This function not implemented"

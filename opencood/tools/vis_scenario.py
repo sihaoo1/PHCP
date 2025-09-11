@@ -21,12 +21,12 @@ torch.multiprocessing.set_sharing_strategy('file_system')
 
 def test_parser():
     parser = argparse.ArgumentParser(description="synthetic data generation")
-    parser.add_argument('--model_dir', type=str, required=True,
+    parser.add_argument('--model_dir', type=str, default="opencood/logs/opv2v/HEAL_m1_based/stage1/m1_base",
                         help='Continued training path')
     parser.add_argument('--fusion_method', type=str,
                         default='intermediate',
                         help='no, no_w_uncertainty, late, early or intermediate')
-    parser.add_argument('--save_vis_interval', type=int, default=40,
+    parser.add_argument('--save_vis_interval', type=int, default=1,
                         help='interval of saving visualization')
     parser.add_argument('--save_npy', action='store_true',
                         help='whether to save prediction and gt result'
@@ -38,6 +38,7 @@ def test_parser():
     parser.add_argument('--note', default="", type=str, help="any other thing?")
     opt = parser.parse_args()
     return opt
+
 
 
 def main():
@@ -111,18 +112,9 @@ def main():
     opencood_dataset = build_dataset(hypes, visualize=True, train=False)
     # opencood_dataset_subset = Subset(opencood_dataset, range(640,2100))
     # data_loader = DataLoader(opencood_dataset_subset,
-    if os.environ.get('DEBUG'):
-        data_loader = DataLoader(opencood_dataset,
+    data_loader = DataLoader(opencood_dataset,
                                 batch_size=1,
                                 num_workers=0,
-                                collate_fn=opencood_dataset.collate_batch_test,
-                                shuffle=False,
-                                pin_memory=False,
-                                drop_last=False)
-    else:
-        data_loader = DataLoader(opencood_dataset,
-                                batch_size=1,
-                                num_workers=4,
                                 collate_fn=opencood_dataset.collate_batch_test,
                                 shuffle=False,
                                 pin_memory=False,

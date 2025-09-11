@@ -37,6 +37,12 @@ def voc_ap(rec, prec):
     return ap, mrec, mpre
 
 
+def calucate_tp_fp_all_threshold(det_boxes, det_score, gt_boxes, result_stat):
+    iou_thresh_list = [0.30, 0.50, 0.70]
+    for iou in iou_thresh_list:
+        caluclate_tp_fp(det_boxes, det_score, gt_boxes, result_stat, iou)
+
+
 def caluclate_tp_fp(det_boxes, det_score, gt_boxes, result_stat, iou_thresh):
     """
     Calculate the true positive and false positive numbers of the current
@@ -157,8 +163,8 @@ def eval_final_results(result_stat, save_path, infer_info=None):
     else:
         yaml_utils.save_yaml(dump_dict, os.path.join(save_path, f'eval_{infer_info}.yaml'))
 
-    print('The Average Precision at IOU 0.3 is %.2f, '
-          'The Average Precision at IOU 0.5 is %.2f, '
-          'The Average Precision at IOU 0.7 is %.2f' % (ap_30, ap_50, ap_70))
+    print('The Average Precision at IOU 0.3 is %.3f, '
+          'The Average Precision at IOU 0.5 is %.3f, '
+          'The Average Precision at IOU 0.7 is %.3f' % (ap_30, ap_50, ap_70))
 
     return ap_30, ap_50, ap_70
