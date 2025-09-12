@@ -1,3 +1,13 @@
+<div align="center">
+<h1>PHCP</h1>
+<a href="https://arxiv.org/abs/2509.09310"><img src="https://img.shields.io/badge/arXiv-2503.11651-b31b1b" alt="arXiv"></a>
+<a href="https://sihaoo1.github.io/PHCP_Page/"><img src="https://img.shields.io/badge/Project_Page-green" alt="Project Page"></a>
+</div>
+
+
+This is the official implementation of ICCV 2025 paper "**You Share Beliefs, I Adapt: Progressive Heterogeneous Collaborative Perception**".
+
+![framework](images/framework.png)
 ## Installation
 
 We recommend installing all dependencies in a virtual environment.
@@ -95,3 +105,6 @@ After execution is done, you can find the AP of all scenarios as well as the mSA
 2021_08_24_20_09_18: 0.91, 0.91, 0.83
 average: 0.929, 0.924, 0.859
 ```
+
+## Acknowledgement
+Our work is built upon [HEAL](https://github.com/yifanlu0227/HEAL), which is an excellent heterogeneous collaborative perception framework.
