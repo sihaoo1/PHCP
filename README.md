@@ -43,7 +43,15 @@ ln -s ${OPV2V_Hetero} ${OPV2V_Hetero_few_shot}
 
 ## Train and Evaluation
 
-We have prepared the configuration files for reproducing the 5-shot experiment, there files are stored in the `opencood/logs` directory.
+Run the following command to create the directory and copy the configuration files.
+```
+cp -r opencood/hypes_yaml/opv2v/Phcp/final opencood/logs
+cp -r opencood/hypes_yaml/opv2v/Phcp/fsl_train opencood/logs/final
+cp -r opencood/hypes_yaml/opv2v/Phcp/fake_label opencood/logs/final
+
+cp -r opencood/modality_assign opencood/logs/heter_modality_assign
+```
+
 
 1. Train the base collaborative models for m1 and m3 separately.
 
@@ -64,7 +72,7 @@ python opencood/tools/heal_tools.py  merge_encoder_and_save_final opencood/logs/
 3. For each scenario, we can utilize the predictions of m3 as pseudo-labels, with the option to set different confidence scores. The default value is 0.5.
 
 ```
-cp opencood/logs/m3/net_epochnet_at*.pth opencood/logs/final/fake_label
+cp opencood/logs/m3/net_epoch_bestval_at*.pth opencood/logs/final/fake_label
 python opencood/tools/generate_fake_label.py --model_dir opencood/logs/final/fake_label --score 0.5
 cp opencood/logs/final/fake_label/fake_label.pkl opencood/logs/final/fsl_train
 
@@ -73,9 +81,8 @@ cp opencood/logs/final/fake_label/fake_label.pkl opencood/logs/final/fsl_train
 4. For each scenario, train the adapter of m1 separately using few-shot finetuning.
 
 ```
-cp opencood/logs/m1/net_epochnet_at*.pth opencood/logs/final/fsl_train
+cp opencood/logs/final/net_epoch1.pth opencood/logs/final/fsl_train
 python opencood/tools/few_shot_train.py --model_dir opencood/logs/final/fsl_train
-
 ```
 
 5. For each scenario, merge the adapter into the m1 base model and perform collaborative perception inference together with m3.
