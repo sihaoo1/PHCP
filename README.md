@@ -30,16 +30,32 @@ python opencood/utils/setup.py build_ext --inplace
 1. Please refer to HEAL to prepare the dataset OPV2V and OPV2V_H
 2. Prepare OPV2V_few_shot and OPV2V_Heter_few_shot dataset following the method below.
 
+Or you can directly download from [baidu netdisk](https://pan.baidu.com/s/1Hx0ttGidQM6gMWeXdS4WWg?pwd=cak2 )
+
+
 ```
 # split by scenario.
-python opencood/tools/split.py --data_dir ${OPV2V_DIR} --out_dir ${OPV2V_few_shot}
+python opencood/tools/split.py --data_dir ${OPV2V_DIR} --out_dir ${OPV2V_few_shot} -g 5
+python opencood/tools/split.py --data_dir ${OPV2V_H_DIR} --out_dir ${OPV2V_Hetero_few_shot} -g 5
 
-# link opv2v_heter_few_shot to opv2v_h
-ln -s ${OPV2V_Hetero} ${OPV2V_Hetero_few_shot}
+# The split dataset should look like this:
+.
+├── OPV2V_Hetero_few_shot
+│   ├── 5_shot
+│   │   ├── test
+│   │   └── train
+│   └── 5_shot_no_first
+│       ├── test
+│       └── train
+└── OPV2V_few_shot
+    ├── 5_shot
+    │   ├── test
+    │   └── train
+    └── 5_shot_no_first
+        ├── test
+        └── train
 ```
 
-3. Prepare another few-shot dataset OPV2V_few_shot_no_first, this dataset is the same as OPV2V_few_shot. The only difference is that we have removed the first folder in each scenario. Because this dataset is used for training the adapter, and we do not want to leak the data of m1 here. The deletion was done manually.
-4. Make sure the `dataset` folder points to your data folder to ensure that the `dataset/OPV2V_few_shot`, `dataset/OPV2V_Hetero_few_shot` folder is valid.
 
 ## Train and Evaluation
 
@@ -54,6 +70,8 @@ cp -r opencood/modality_assign opencood/logs/heter_modality_assign
 
 
 1. Train the base collaborative models for m1 and m3 separately.
+
+We also provide the m1 and m3 checkpoints. You can download them from [Baidu Netdisk](https://pan.baidu.com/s/1WYbaomStz_Oi1kpMRumOIw?pwd=hn4h).
 
 ```
 # train m1 based model
